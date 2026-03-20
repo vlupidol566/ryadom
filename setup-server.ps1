@@ -79,9 +79,11 @@ try {
     $pm2Ok = $true
 }
 
-# 7. Stop old processes
+# 7. Stop old processes (ignore errors if none exist)
 Step "Stopping old PM2 processes..."
-pm2 delete all 2>$null | Out-Null
+$ErrorActionPreference = "Continue"
+pm2 delete all 2>&1 | Out-Null
+$ErrorActionPreference = "Stop"
 Ok "Old processes cleared"
 
 # 8. Start servers
@@ -89,16 +91,22 @@ Step "Starting Backend on port 3010..."
 $backendJs   = Join-Path $backendDir "server.js"
 $signalingJs = Join-Path $signalingDir "server.js"
 
-pm2 start $backendJs --name "ryadom-backend" --watch $backendDir --ignore-watch "node_modules users.json"
+$ErrorActionPreference = "Continue"
+pm2 start $backendJs --name "ryadom-backend" 2>&1 | Out-Null
+$ErrorActionPreference = "Stop"
 Ok "Backend started"
 
 Step "Starting Signaling Server on port 9090..."
-pm2 start $signalingJs --name "ryadom-signaling" --watch $signalingDir --ignore-watch "node_modules"
+$ErrorActionPreference = "Continue"
+pm2 start $signalingJs --name "ryadom-signaling" 2>&1 | Out-Null
+$ErrorActionPreference = "Stop"
 Ok "Signaling started"
 
 # 9. Save + autostart
 Step "Saving PM2 process list..."
-pm2 save
+$ErrorActionPreference = "Continue"
+pm2 save 2>&1 | Out-Null
+$ErrorActionPreference = "Stop"
 Ok "Saved"
 
 Step "Setting up autostart on Windows boot..."
