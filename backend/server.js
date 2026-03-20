@@ -4,10 +4,10 @@
  * Запуск: npm start
  */
 
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const http = require('http');
 const fs = require('fs');
-const path = require('path');
 
 const PORT = process.env.PORT || 3010;
 const API_TOKEN = process.env.API_TOKEN;
