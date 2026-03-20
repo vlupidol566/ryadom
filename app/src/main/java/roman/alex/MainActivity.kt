@@ -31,9 +31,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Яндекс.Карты
-        MapKitFactory.setApiKey("a475bc49-93c8-4788-a542-c112213af8fb")
+        // Яндекс.Карты (используем константу из конфига)
+        MapKitFactory.setApiKey(SignalingConfig.YANDEX_MAPS_API_KEY)
         MapKitFactory.initialize(this)
+        // TransportFactory инициализируется автоматически через MapKitFactory — отдельный вызов не нужен
         
         enableEdgeToEdge()
         setContent {
@@ -81,7 +82,7 @@ fun MainNavigation() {
     val contactsRepository = remember { ContactsRepository(context.applicationContext) }
     val userRepository = remember {
         UserRepository(
-            baseUrl = "http://176.99.158.181:3001",
+            baseUrl = "http://176.99.158.181:3010",
             apiToken = "roman_alex_8f3a2b1c9d4e5f6a7b8c9d0e1f2a3b4c5d"
         )
     }

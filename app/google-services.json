@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "574895647931",
+    "project_id": "ryadom-49cda",
+    "storage_bucket": "ryadom-49cda.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:574895647931:android:3cb0a6af6c6e1131f1cd9e",
+        "android_client_info": {
+          "package_name": "roman.alex"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBEII0sa3nbwy1Jbs8vI8i2A_xh3lyCtMA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

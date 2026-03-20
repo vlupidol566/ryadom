@@ -24,7 +24,9 @@ class WebRtcClient(
     private val onRemoteStream: (VideoTrack) -> Unit,
     private val onConnectionStateChange: ((connected: Boolean) -> Unit)? = null,
     private val onLocalTrack: ((VideoTrack) -> Unit)? = null,
-    private val onHelpRequest: ((fromPhone: String, note: String) -> Unit)? = null
+    private val onHelpRequest: ((fromPhone: String, note: String) -> Unit)? = null,
+    private val onChatMessage: ((message: String) -> Unit)? = null,
+    private val onLocationUpdate: ((lat: Double, lon: Double) -> Unit)? = null
 ) {
     companion object {
         private const val TAG = "WebRtcClient"
@@ -129,6 +131,21 @@ class WebRtcClient(
         scope.launch { signalingOutgoing.send(msg) }
     }
 
+    fun sendChatMessage(message: String) {
+        sendSignaling(JSONObject().apply {
+            put("type", "chat")
+            put("message", message)
+        }.toString())
+    }
+
+    fun sendLocation(lat: Double, lon: Double) {
+        sendSignaling(JSONObject().apply {
+            put("type", "location")
+            put("lat", lat)
+            put("lon", lon)
+        }.toString())
+    }
+
     private fun handleSignalingMessage(message: String) {
         try {
             val json = JSONObject(message)
@@ -194,6 +211,27 @@ class WebRtcClient(
                         onHelpRequest?.let { cb ->
                             scope.launch(Dispatchers.Main) {
                                 cb(fromPhone, note)
+                            }
+                        }
+                    }
+                }
+                "chat" -> {
+                    val msg = json.optString("message")
+                    if (msg.isNotBlank()) {
+                        onChatMessage?.let { cb ->
+                            scope.launch(Dispatchers.Main) {
+                                cb(msg)
+                            }
+                        }
+                    }
+                }
+                "location" -> {
+                    val lat = json.optDouble("lat")
+                    val lon = json.optDouble("lon")
+                    if (!lat.isNaN() && !lon.isNaN()) {
+                        onLocationUpdate?.let { cb ->
+                            scope.launch(Dispatchers.Main) {
+                                cb(lat, lon)
                             }
                         }
                     }

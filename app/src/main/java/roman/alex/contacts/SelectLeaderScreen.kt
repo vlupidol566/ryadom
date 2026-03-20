@@ -2,47 +2,23 @@ package roman.alex.contacts
 
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Call
-import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material.icons.rounded.Videocam
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
@@ -51,9 +27,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.isSystemInDarkTheme
-import roman.alex.AppBackground
-import roman.alex.getAppContentColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,7 +38,14 @@ fun SelectLeaderScreen(
     val context = LocalContext.current
     val contacts = remember { mutableStateListOf<Contact>() }
     val isDark = isSystemInDarkTheme()
-    val contentColor = getAppContentColor()
+
+    val bgColor        = MaterialTheme.colorScheme.background
+    val navColor       = if (isDark) Color(0xFF1C1C1E).copy(alpha = 0.94f)
+                         else Color(0xFFF2F2F7).copy(alpha = 0.94f)
+    val cardColor      = if (isDark) Color(0xFF2C2C2E) else Color.White
+    val labelColor     = MaterialTheme.colorScheme.onBackground
+    val secondaryLabel = labelColor.copy(alpha = if (isDark) 0.55f else 0.5f)
+    val separatorColor = if (isDark) Color(0xFF48484A) else Color(0xFFC6C6C8)
 
     LaunchedEffect(Unit) {
         contacts.clear()
@@ -73,194 +53,240 @@ fun SelectLeaderScreen(
     }
 
     Scaffold(
-        containerColor = Color.Transparent,
+        containerColor = bgColor,
         topBar = {
-            TopAppBar(
-                modifier = Modifier.statusBarsPadding(),
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = navColor,
+                tonalElevation = 0.dp,
+                shadowElevation = 0.dp
+            ) {
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .statusBarsPadding()
+                            .height(44.dp)
+                            .padding(horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable(onClick = onBack)
+                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Rounded.ArrowBack,
+                                contentDescription = "Назад",
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(Modifier.width(2.dp))
+                            Text(
+                                "Назад",
+                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 17.sp),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        Spacer(Modifier.weight(1f))
+
+                        Text(
+                            "Выбрать ведущего",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 17.sp
+                            ),
+                            color = labelColor
+                        )
+
+                        Spacer(Modifier.weight(1f))
+
+                        // Spacer to balance title
+                        Spacer(Modifier.width(80.dp))
+                    }
+                    HorizontalDivider(thickness = 0.5.dp, color = separatorColor)
+                }
+            }
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 16.dp)
+        ) {
+            if (contacts.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Surface(
+                            modifier = Modifier.size(72.dp),
                             shape = CircleShape,
-                            color = Color.White.copy(alpha = if (isDark) 0.1f else 0.4f),
-                            modifier = Modifier.size(32.dp)
+                            color = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA),
+                            tonalElevation = 0.dp,
+                            shadowElevation = 0.dp
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
-                                    Icons.Rounded.Videocam,
+                                    Icons.Rounded.PersonOff,
                                     contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
-                                    tint = contentColor
+                                    modifier = Modifier.size(32.dp),
+                                    tint = secondaryLabel
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(Modifier.height(16.dp))
                         Text(
-                            "Выберите ведущего",
-                            style = MaterialTheme.typography.titleSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = contentColor,
-                                fontSize = 16.sp
-                            )
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(
-                        onClick = onBack,
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = if (isDark) 0.1f else 0.4f))
-                    ) {
-                        Icon(Icons.Rounded.ArrowBack, contentDescription = "Назад", tint = contentColor)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    titleContentColor = contentColor
-                )
-            )
-        }
-    ) { padding ->
-        AppBackground {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-            ) {
-                if (contacts.isEmpty()) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Surface(
-                                shape = RoundedCornerShape(24.dp),
-                                color = Color.White.copy(alpha = if (isDark) 0.1f else 0.4f),
-                                border = BorderStroke(1.dp, Brush.linearGradient(listOf(Color.White.copy(alpha = 0.6f), Color.White.copy(alpha = 0.1f))))
-                            ) {
-                                Box(modifier = Modifier.padding(24.dp), contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        Icons.Rounded.Person,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(64.dp),
-                                        tint = contentColor.copy(alpha = 0.7f)
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                "Нет контактов",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = contentColor,
-                                    fontSize = 18.sp
-                                )
-                            )
-                            Text(
-                                "Добавьте контакт в «Контакты» на главном экране",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    color = contentColor.copy(alpha = 0.7f),
-                                    fontSize = 14.sp
-                                )
-                            )
-                        }
-                    }
-                } else {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 16.dp)
-                    ) {
-                        Text(
-                            "Нажмите на контакт для подключения к ведущему",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                color = contentColor.copy(alpha = 0.8f),
-                                fontSize = 14.sp
+                            "Нет контактов",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 17.sp
                             ),
-                            modifier = Modifier.padding(vertical = 12.dp)
+                            color = labelColor
                         )
-                        LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(contacts, key = { it.id }) { contact ->
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "Добавьте контакт в разделе «Контакты»",
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                            color = secondaryLabel
+                        )
+                    }
+                }
+            } else {
+                Spacer(Modifier.height(20.dp))
+
+                Text(
+                    text = "ВЕДУЩИЕ",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Normal,
+                        fontSize = 13.sp,
+                        letterSpacing = 0.4.sp
+                    ),
+                    color = secondaryLabel,
+                    modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
+                )
+
+                Text(
+                    text = "Нажмите на контакт для подключения",
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                    color = secondaryLabel,
+                    modifier = Modifier.padding(start = 16.dp, bottom = 12.dp)
+                )
+
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    color = cardColor,
+                    tonalElevation = 0.dp,
+                    shadowElevation = if (isDark) 0.dp else 1.dp
+                ) {
+                    LazyColumn {
+                        itemsIndexed(contacts, key = { _, c -> c.id }) { index, contact ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onSelectLeader(contact) }
+                                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                                    .semantics(mergeDescendants = true) {
+                                        contentDescription = "Ведущий ${contact.name}. Нажмите чтобы подключиться."
+                                    },
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Avatar
                                 Surface(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .semantics(mergeDescendants = true) {
-                                            contentDescription = "Ведущий ${contact.name}. Нажмите чтобы подключиться."
-                                        }
-                                        .clickable(onClick = { onSelectLeader(contact) }),
-                                    shape = RoundedCornerShape(28.dp),
-                                    color = Color.White.copy(alpha = if (isDark) 0.1f else 0.4f),
-                                    border = BorderStroke(
-                                        1.dp,
-                                        Brush.linearGradient(listOf(Color.White.copy(alpha = 0.6f), Color.White.copy(alpha = 0.1f)))
-                                    )
+                                    modifier = Modifier.size(44.dp),
+                                    shape = CircleShape,
+                                    color = Color(0xFF007AFF).copy(alpha = 0.12f),
+                                    tonalElevation = 0.dp
                                 ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(20.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Surface(
-                                            shape = RoundedCornerShape(14.dp),
-                                            color = Color(0xFF2196F3).copy(alpha = if (isDark) 0.3f else 0.2f),
-                                            border = BorderStroke(1.dp, Color(0xFF2196F3).copy(alpha = 0.4f))
-                                        ) {
-                                            Box(
-                                                modifier = Modifier.size(52.dp),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Icon(
-                                                    Icons.Rounded.Person,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(26.dp),
-                                                    tint = contentColor
-                                                )
-                                            }
-                                        }
-                                        Spacer(modifier = Modifier.width(16.dp))
-                                        Column(modifier = Modifier.weight(1f)) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        if (contact.name.isNotBlank()) {
                                             Text(
-                                                text = contact.name.ifBlank { "Без имени" },
+                                                text = contact.name.take(1).uppercase(),
                                                 style = MaterialTheme.typography.titleMedium.copy(
-                                                    fontWeight = FontWeight.Medium,
-                                                    color = contentColor,
-                                                    fontSize = 16.sp
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    fontSize = 17.sp
                                                 ),
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
+                                                color = Color(0xFF007AFF)
                                             )
-                                            if (contact.phone.isNotBlank()) {
-                                                Text(
-                                                    text = contact.phone,
-                                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                                        color = contentColor.copy(alpha = 0.7f),
-                                                        fontSize = 14.sp
-                                                    ),
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
-                                            }
-                                        }
-                                        IconButton(
-                                            onClick = {
-                                                val intent = Intent(Intent.ACTION_DIAL).apply {
-                                                    data = Uri.parse("tel:${contact.phone}")
-                                                }
-                                                context.startActivity(intent)
-                                            },
-                                            modifier = Modifier.semantics { contentDescription = "Позвонить ${contact.name}" }
-                                        ) {
+                                        } else {
                                             Icon(
-                                                Icons.Rounded.Call,
-                                                contentDescription = "Позвонить",
-                                                tint = contentColor
+                                                Icons.Rounded.Person,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(22.dp),
+                                                tint = Color(0xFF007AFF)
                                             )
                                         }
                                     }
                                 }
+
+                                Spacer(Modifier.width(14.dp))
+
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = contact.name.ifBlank { "Без имени" },
+                                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 17.sp),
+                                        color = labelColor,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    if (contact.phone.isNotBlank()) {
+                                        Text(
+                                            text = contact.phone,
+                                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                                            color = secondaryLabel,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+
+                                // Call button
+                                Box(
+                                    modifier = Modifier
+                                        .size(34.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            Color(0xFF34C759).copy(alpha = 0.12f)
+                                        )
+                                        .clickable {
+                                            val intent = Intent(Intent.ACTION_DIAL).apply {
+                                                data = Uri.parse("tel:${contact.phone}")
+                                            }
+                                            context.startActivity(intent)
+                                        }
+                                        .semantics { contentDescription = "Позвонить ${contact.name}" },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        Icons.Rounded.Call,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(17.dp),
+                                        tint = Color(0xFF34C759)
+                                    )
+                                }
+
+                                Spacer(Modifier.width(8.dp))
+
+                                Icon(
+                                    Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                    tint = secondaryLabel
+                                )
+                            }
+
+                            if (index < contacts.lastIndex) {
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(start = 72.dp),
+                                    thickness = 0.5.dp,
+                                    color = separatorColor.copy(alpha = 0.6f)
+                                )
                             }
                         }
                     }

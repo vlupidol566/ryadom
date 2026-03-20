@@ -19,11 +19,11 @@ val OnTertiaryLight = Color.White
 val TertiaryContainerLight = Color(0xFFE7F9EC)
 val OnTertiaryContainerLight = Color(0xFF0F5226)
 
-val BackgroundLight = Color(0xFFFFFFFF)       // чистый белый фон
+val BackgroundLight = Color(0xFFF2F2F7)       // iOS systemBackground light (#F2F2F7)
 val OnBackgroundLight = Color(0xFF000000)
 
-val SurfaceLight = Color(0xFFF8F9FA)          // светло‑серые карточки
-val OnSurfaceLight = Color(0xFF111827)
+val SurfaceLight = Color(0xFFFFFFFF)          // iOS secondarySystemBackground — белые карточки на сером фоне
+val OnSurfaceLight = Color(0xFF000000)
 
 val SurfaceVariantLight = Color(0xFFE5E7EB)
 val OnSurfaceVariantLight = Color(0xFF4B5563)
@@ -53,17 +53,17 @@ val OnTertiaryDark = Color(0xFF00330F)
 val TertiaryContainerDark = Color(0xFF145523)
 val OnTertiaryContainerDark = Color(0xFFE7F9EC)
 
-val BackgroundDark = Color(0xFF000000)       // глубокий чёрный
-val OnBackgroundDark = Color(0xFFF9FAFB)
+val BackgroundDark = Color(0xFF1C1C1E)       // iOS systemBackground dark
+val OnBackgroundDark = Color(0xFFFFFFFF)
 
-val SurfaceDark = Color(0xFF1C1C1E)
-val OnSurfaceDark = Color(0xFFF9FAFB)
+val SurfaceDark = Color(0xFF2C2C2E)          // iOS secondarySystemBackground dark
+val OnSurfaceDark = Color(0xFFFFFFFF)
 
-val SurfaceVariantDark = Color(0xFF2C2C2E)
-val OnSurfaceVariantDark = Color(0xFFC7CAD1)
+val SurfaceVariantDark = Color(0xFF3A3A3C)   // iOS tertiarySystemBackground dark
+val OnSurfaceVariantDark = Color(0xFFEBEBF5)
 
-val OutlineDark = Color(0xFF3F3F46)
-val OutlineVariantDark = Color(0xFF27272A)
+val OutlineDark = Color(0xFF48484A)          // iOS separator dark
+val OutlineVariantDark = Color(0xFF38383A)
 
 val CardLeadingTintDark = Color(0xFF1F2933)
 val CardFollowerTintDark = Color(0xFF111827)

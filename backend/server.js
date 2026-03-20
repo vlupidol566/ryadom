@@ -9,7 +9,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3010;
 const API_TOKEN = process.env.API_TOKEN;
 const USERS_FILE = path.join(__dirname, 'users.json');
 
