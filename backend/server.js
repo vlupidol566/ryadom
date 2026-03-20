@@ -51,15 +51,6 @@ function saveUsers(users) {
 }
 
 const server = http.createServer(async (req, res) => {
-  const auth = req.headers.authorization;
-  const token = auth && auth.startsWith('Bearer ') ? auth.slice(7) : null;
-
-  if (API_TOKEN && token !== API_TOKEN) {
-    res.writeHead(401, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Invalid or missing API token' }));
-    return;
-  }
-
   // CORS для удобства разработки
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
@@ -70,6 +61,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // /health — публичный, без токена
   if (req.url === '/health' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
@@ -77,6 +69,15 @@ const server = http.createServer(async (req, res) => {
       message: 'Backend running',
       tokenSet: !!API_TOKEN
     }));
+    return;
+  }
+
+  // Все остальные маршруты — проверка токена
+  const auth = req.headers.authorization;
+  const token = auth && auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  if (API_TOKEN && token !== API_TOKEN) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Invalid or missing API token' }));
     return;
   }
 
