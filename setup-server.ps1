@@ -1,163 +1,154 @@
-# =====================================================================
-#  Рядом — Setup Server Script для Windows 11
-#  Запуск: правой кнопкой -> "Запустить с помощью PowerShell"
-#  Или в PowerShell от администратора: .\setup-server.ps1
-# =====================================================================
+# Ryadom - Server Setup Script for Windows 11
+# Run as Administrator: powershell -ExecutionPolicy Bypass -File .\setup-server.ps1
 
 $ErrorActionPreference = "Stop"
-$Host.UI.RawUI.WindowTitle = "Ryadom Server Setup"
 
-function Write-Step { param($text) Write-Host "`n==> $text" -ForegroundColor Cyan }
-function Write-Ok   { param($text) Write-Host "    [OK] $text" -ForegroundColor Green }
-function Write-Fail { param($text) Write-Host "    [!!] $text" -ForegroundColor Red }
-function Write-Info { param($text) Write-Host "    $text" -ForegroundColor Gray }
+function Step  { Write-Host "`n==> $args" -ForegroundColor Cyan }
+function Ok    { Write-Host "    [OK] $args" -ForegroundColor Green }
+function Fail  { Write-Host "    [!!] $args" -ForegroundColor Red }
+function Info  { Write-Host "    $args" -ForegroundColor Gray }
 
-Write-Host @"
+Write-Host ""
+Write-Host "  RYADOM - Server Setup" -ForegroundColor Blue
+Write-Host "  Backend :3010  |  Signaling :9090" -ForegroundColor Blue
+Write-Host ""
 
-  ██████╗ ██╗   ██╗ █████╗ ██████╗  ██████╗ ███╗   ███╗
-  ██╔══██╗╚██╗ ██╔╝██╔══██╗██╔══██╗██╔═══██╗████╗ ████║
-  ██████╔╝ ╚████╔╝ ███████║██║  ██║██║   ██║██╔████╔██║
-  ██╔══██╗  ╚██╔╝  ██╔══██║██║  ██║██║   ██║██║╚██╔╝██║
-  ██║  ██║   ██║   ██║  ██║██████╔╝╚██████╔╝██║ ╚═╝ ██║
-  ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═════╝  ╚═════╝ ╚═╝     ╚═╝
-              Server Setup  —  v1.0
-"@ -ForegroundColor Blue
-
-# ── 1. Проверяем Node.js ─────────────────────────────────────────────
-Write-Step "Проверяем Node.js..."
+# 1. Check Node.js
+Step "Checking Node.js..."
 try {
-    $nodeVersion = node --version 2>&1
-    Write-Ok "Node.js установлен: $nodeVersion"
+    $nodeVer = node --version 2>&1
+    Ok "Node.js: $nodeVer"
 } catch {
-    Write-Fail "Node.js не найден!"
-    Write-Info "Скачай и установи с https://nodejs.org (LTS версию)"
-    Write-Info "После установки перезапусти этот скрипт."
-    Read-Host "`nНажми Enter для выхода"
+    Fail "Node.js not found!"
+    Info "Download from https://nodejs.org (LTS)"
+    Read-Host "Press Enter to exit"
     exit 1
 }
 
-# ── 2. Проверяем npm ──────────────────────────────────────────────────
-$npmVersion = npm --version 2>&1
-Write-Ok "npm: $npmVersion"
+$npmVer = npm --version 2>&1
+Ok "npm: $npmVer"
 
-# ── 3. Определяем корень проекта ─────────────────────────────────────
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$backendDir   = Join-Path $scriptDir "backend"
-$signalingDir = Join-Path $scriptDir "signaling-server"
+# 2. Paths
+$root          = Split-Path -Parent $MyInvocation.MyCommand.Path
+$backendDir    = Join-Path $root "backend"
+$signalingDir  = Join-Path $root "signaling-server"
 
-Write-Step "Пути к серверам..."
-Write-Info "Backend:   $backendDir"
-Write-Info "Signaling: $signalingDir"
+Step "Checking folders..."
+Info "Backend:   $backendDir"
+Info "Signaling: $signalingDir"
 
-if (-not (Test-Path $backendDir)) {
-    Write-Fail "Папка backend не найдена: $backendDir"
-    Read-Host "Нажми Enter для выхода"; exit 1
-}
-if (-not (Test-Path $signalingDir)) {
-    Write-Fail "Папка signaling-server не найдена: $signalingDir"
-    Read-Host "Нажми Enter для выхода"; exit 1
-}
+if (-not (Test-Path $backendDir))   { Fail "backend folder not found";          Read-Host "Press Enter"; exit 1 }
+if (-not (Test-Path $signalingDir)) { Fail "signaling-server folder not found"; Read-Host "Press Enter"; exit 1 }
 
-# ── 4. Устанавливаем зависимости ─────────────────────────────────────
-Write-Step "Устанавливаем зависимости backend (порт 3010)..."
+# 3. npm install backend
+Step "Installing backend dependencies (port 3010)..."
 Push-Location $backendDir
-npm install --silent
-Write-Ok "Backend зависимости установлены"
+npm install --silent 2>&1 | Out-Null
+Ok "Backend deps installed"
 
-# ── 5. Создаём .env для backend ──────────────────────────────────────
+# 4. Create .env
 $envFile = Join-Path $backendDir ".env"
 if (-not (Test-Path $envFile)) {
-    @"
-PORT=3010
-API_TOKEN=roman_alex_8f3a2b1c9d4e5f6a7b8c9d0e1f2a3b4c5d
-"@ | Set-Content $envFile -Encoding UTF8
-    Write-Ok ".env создан (PORT=3010)"
+    Set-Content -Path $envFile -Value "PORT=3010" -Encoding UTF8
+    Add-Content -Path $envFile -Value "API_TOKEN=roman_alex_8f3a2b1c9d4e5f6a7b8c9d0e1f2a3b4c5d"
+    Ok ".env created (PORT=3010)"
 } else {
-    Write-Info ".env уже существует — не перезаписываем"
+    Info ".env already exists - skipping"
 }
 Pop-Location
 
-Write-Step "Устанавливаем зависимости signaling-server (порт 9090)..."
+# 5. npm install signaling
+Step "Installing signaling-server dependencies (port 9090)..."
 Push-Location $signalingDir
-npm install --silent
-Write-Ok "Signaling зависимости установлены"
+npm install --silent 2>&1 | Out-Null
+Ok "Signaling deps installed"
 Pop-Location
 
-# ── 6. Устанавливаем PM2 ─────────────────────────────────────────────
-Write-Step "Проверяем PM2..."
+# 6. Install PM2
+Step "Checking PM2..."
+$pm2Ok = $false
 try {
     $pm2Ver = pm2 --version 2>&1
-    Write-Ok "PM2 уже установлен: $pm2Ver"
+    Ok "PM2 already installed: $pm2Ver"
+    $pm2Ok = $true
 } catch {
-    Write-Info "PM2 не найден, устанавливаем..."
-    npm install -g pm2
-    npm install -g pm2-windows-startup
-    Write-Ok "PM2 установлен"
+    Info "Installing PM2..."
+    npm install -g pm2 2>&1 | Out-Null
+    npm install -g pm2-windows-startup 2>&1 | Out-Null
+    Ok "PM2 installed"
+    $pm2Ok = $true
 }
 
-# ── 7. Останавливаем старые процессы если были ───────────────────────
-Write-Step "Сбрасываем старые процессы PM2..."
+# 7. Stop old processes
+Step "Stopping old PM2 processes..."
 pm2 delete all 2>$null | Out-Null
-Write-Ok "Старые процессы удалены (или их не было)"
+Ok "Old processes cleared"
 
-# ── 8. Запускаем серверы ─────────────────────────────────────────────
-Write-Step "Запускаем Backend на порту 3010..."
-pm2 start "$backendDir\server.js" --name "ryadom-backend" --watch "$backendDir" --ignore-watch "node_modules users.json"
-Write-Ok "Backend запущен"
+# 8. Start servers
+Step "Starting Backend on port 3010..."
+$backendJs   = Join-Path $backendDir "server.js"
+$signalingJs = Join-Path $signalingDir "server.js"
 
-Write-Step "Запускаем Signaling Server на порту 9090..."
-pm2 start "$signalingDir\server.js" --name "ryadom-signaling" --watch "$signalingDir" --ignore-watch "node_modules"
-Write-Ok "Signaling запущен"
+pm2 start $backendJs --name "ryadom-backend" --watch $backendDir --ignore-watch "node_modules users.json"
+Ok "Backend started"
 
-# ── 9. Сохраняем и настраиваем автозапуск ────────────────────────────
-Write-Step "Настраиваем автозапуск при старте Windows..."
+Step "Starting Signaling Server on port 9090..."
+pm2 start $signalingJs --name "ryadom-signaling" --watch $signalingDir --ignore-watch "node_modules"
+Ok "Signaling started"
+
+# 9. Save + autostart
+Step "Saving PM2 process list..."
 pm2 save
+Ok "Saved"
 
+Step "Setting up autostart on Windows boot..."
 try {
-    pm2-startup install 2>$null
-    Write-Ok "Автозапуск настроен через pm2-windows-startup"
+    pm2-startup install 2>$null | Out-Null
+    Ok "Autostart configured via pm2-windows-startup"
 } catch {
-    # Альтернатива через Task Scheduler
-    Write-Info "pm2-startup не сработал — используем Планировщик задач..."
-    $pm2Path = (Get-Command pm2).Source
-    $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-WindowStyle Hidden -Command `"$pm2Path resurrect`""
-    $trigger = New-ScheduledTaskTrigger -AtLogOn
-    $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 5)
-    Register-ScheduledTask -TaskName "Ryadom PM2 Autostart" -Action $action -Trigger $trigger -Settings $settings -RunLevel Highest -Force | Out-Null
-    Write-Ok "Автозапуск через Планировщик задач настроен"
+    Info "Falling back to Task Scheduler..."
+    try {
+        $pm2Path = (Get-Command pm2 -ErrorAction Stop).Source
+        $action   = New-ScheduledTaskAction -Execute "powershell.exe" -Argument ("-WindowStyle Hidden -Command `"& '" + $pm2Path + "' resurrect`"")
+        $trigger  = New-ScheduledTaskTrigger -AtLogOn
+        $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 5)
+        Register-ScheduledTask -TaskName "Ryadom PM2 Autostart" -Action $action -Trigger $trigger -Settings $settings -RunLevel Highest -Force | Out-Null
+        Ok "Autostart via Task Scheduler configured"
+    } catch {
+        Info "Could not configure autostart - run 'pm2 resurrect' manually after reboot"
+    }
 }
 
-# ── 10. Открываем порты в брандмауэре ────────────────────────────────
-Write-Step "Открываем порты в Windows Firewall..."
+# 10. Firewall rules
+Step "Opening ports in Windows Firewall..."
 try {
-    netsh advfirewall firewall delete rule name="Ryadom Backend 3010" 2>$null | Out-Null
+    netsh advfirewall firewall delete rule name="Ryadom Backend 3010"   2>$null | Out-Null
     netsh advfirewall firewall delete rule name="Ryadom Signaling 9090" 2>$null | Out-Null
     netsh advfirewall firewall add rule name="Ryadom Backend 3010"   dir=in action=allow protocol=TCP localport=3010 | Out-Null
     netsh advfirewall firewall add rule name="Ryadom Signaling 9090" dir=in action=allow protocol=TCP localport=9090 | Out-Null
-    Write-Ok "Порты 3010 и 9090 открыты в Firewall"
+    Ok "Ports 3010 and 9090 opened in Firewall"
 } catch {
-    Write-Fail "Не удалось изменить Firewall — запусти скрипт от Администратора"
+    Fail "Firewall update failed - run this script as Administrator"
 }
 
-# ── 11. Финальный статус ──────────────────────────────────────────────
+# 11. Status
 Write-Host ""
-Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Blue
-Write-Host "  СЕРВЕРЫ ЗАПУЩЕНЫ" -ForegroundColor Green
-Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Blue
+Write-Host "---------------------------------------------------" -ForegroundColor Blue
+Write-Host "  SERVERS ARE RUNNING" -ForegroundColor Green
+Write-Host "---------------------------------------------------" -ForegroundColor Blue
 Write-Host ""
-Write-Host "  Backend  REST API  :  http://176.99.158.181:3010" -ForegroundColor White
-Write-Host "  Signaling WebSocket:  ws://176.99.158.181:9090" -ForegroundColor White
+Write-Host "  Backend  REST API : http://176.99.158.181:3010" -ForegroundColor White
+Write-Host "  Signaling WebSocket: ws://176.99.158.181:9090"  -ForegroundColor White
 Write-Host ""
-Write-Host "  Проверка backend:" -ForegroundColor Gray
-Write-Host "  http://176.99.158.181:3010/health" -ForegroundColor Yellow
+Write-Host "  Health check: http://176.99.158.181:3010/health" -ForegroundColor Yellow
 Write-Host ""
-Write-Host "  Управление серверами:" -ForegroundColor Gray
-Write-Host "  pm2 status       — статус процессов" -ForegroundColor Gray
-Write-Host "  pm2 logs         — логи в реальном времени" -ForegroundColor Gray
-Write-Host "  pm2 restart all  — перезапустить всё" -ForegroundColor Gray
-Write-Host "  pm2 stop all     — остановить всё" -ForegroundColor Gray
+Write-Host "  pm2 status       - show process list" -ForegroundColor Gray
+Write-Host "  pm2 logs         - live logs" -ForegroundColor Gray
+Write-Host "  pm2 restart all  - restart everything" -ForegroundColor Gray
+Write-Host "  pm2 stop all     - stop everything" -ForegroundColor Gray
 Write-Host ""
 
 pm2 status
 
-Read-Host "`nНажми Enter для выхода"
+Write-Host ""
+Read-Host "Press Enter to exit"
