@@ -9,139 +9,134 @@ echo   Backend :3010  ^|  Signaling :9090
 echo  ==========================================
 echo.
 
-:: Check Node.js
-echo [1/8] Checking Node.js...
+:: ── 1. Node.js ──────────────────────────────────────────────────────
+echo [1/7] Checking Node.js...
 node --version >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [!!] Node.js not found!
-    echo      Download from https://nodejs.org
-    pause
-    exit /b 1
-)
-for /f %%v in ('node --version') do echo [OK] Node.js: %%v
-for /f %%v in ('npm --version') do echo [OK] npm: %%v
-
-:: Get script directory
-set ROOT=%~dp0
-set ROOT=%ROOT:~0,-1%
-set BACKEND=%ROOT%\backend
-set SIGNALING=%ROOT%\signaling-server
-
-echo.
-echo [2/8] Checking folders...
-echo      Backend:   %BACKEND%
-echo      Signaling: %SIGNALING%
-
-if not exist "%BACKEND%" (
-    echo [!!] backend folder not found
+    echo [!!] Node.js not found! Download from https://nodejs.org
     pause & exit /b 1
 )
-if not exist "%SIGNALING%" (
-    echo [!!] signaling-server folder not found
-    pause & exit /b 1
-)
+for /f "tokens=*" %%v in ('node --version 2^>nul') do echo [OK] Node.js %%v
 
-:: Install backend deps
+:: ── 2. Folders ──────────────────────────────────────────────────────
+set "ROOT=%~dp0"
+if "%ROOT:~-1%"=="\" set "ROOT=%ROOT:~0,-1%"
+set "BACKEND=%ROOT%\backend"
+set "SIGNALING=%ROOT%\signaling-server"
+set "PM2=%APPDATA%\npm\node_modules\pm2\bin\pm2"
+
 echo.
-echo [3/8] Installing backend dependencies...
+echo [2/7] Checking folders...
+if not exist "%BACKEND%"   ( echo [!!] backend not found   & pause & exit /b 1 )
+if not exist "%SIGNALING%" ( echo [!!] signaling not found & pause & exit /b 1 )
+echo [OK] Backend:   %BACKEND%
+echo [OK] Signaling: %SIGNALING%
+
+:: ── 3. npm install backend ──────────────────────────────────────────
+echo.
+echo [3/7] Installing backend dependencies...
 cd /d "%BACKEND%"
-call npm install --silent
+call npm install --silent 2>nul
 echo [OK] Backend deps installed
 
-:: Create .env
+:: Fix .env — always ensure API_TOKEN is present
 if not exist "%BACKEND%\.env" (
     echo PORT=3010 > "%BACKEND%\.env"
     echo API_TOKEN=roman_alex_8f3a2b1c9d4e5f6a7b8c9d0e1f2a3b4c5d >> "%BACKEND%\.env"
     echo [OK] .env created
 ) else (
-    :: Make sure API_TOKEN is in the file
     findstr /c:"API_TOKEN" "%BACKEND%\.env" >nul 2>&1
     if %errorlevel% neq 0 (
         echo API_TOKEN=roman_alex_8f3a2b1c9d4e5f6a7b8c9d0e1f2a3b4c5d >> "%BACKEND%\.env"
-        echo [OK] API_TOKEN added to existing .env
+        echo [OK] API_TOKEN added to .env
     ) else (
-        echo [OK] .env already exists
-    )
-    :: Make sure PORT=3010 is set
-    findstr /c:"PORT=3010" "%BACKEND%\.env" >nul 2>&1
-    if %errorlevel% neq 0 (
-        echo PORT=3010 >> "%BACKEND%\.env"
-        echo [OK] PORT=3010 added to .env
+        echo [OK] .env OK
     )
 )
 
-:: Install signaling deps
+:: ── 4. npm install signaling ────────────────────────────────────────
 echo.
-echo [4/8] Installing signaling-server dependencies...
+echo [4/7] Installing signaling-server dependencies...
 cd /d "%SIGNALING%"
-call npm install --silent
+call npm install --silent 2>nul
 echo [OK] Signaling deps installed
 
-:: Install PM2
+:: ── 5. Install PM2 if missing ───────────────────────────────────────
 echo.
-echo [5/8] Checking PM2...
-pm2 --version >nul 2>&1
-if %errorlevel% neq 0 (
-    echo      Installing PM2...
-    call npm install -g pm2
-    call npm install -g pm2-windows-startup
+echo [5/7] Checking PM2...
+if not exist "%PM2%" (
+    echo      Installing PM2 via npm...
+    call npm install -g pm2 2>nul
     echo [OK] PM2 installed
 ) else (
-    for /f %%v in ('pm2 --version') do echo [OK] PM2 already installed: %%v
+    echo [OK] PM2 found
 )
 
-:: Stop old processes
+:: ── 6. Start servers via node pm2 directly ─────────────────────────
 echo.
-echo [6/8] Stopping old PM2 processes...
-pm2 delete all >nul 2>&1
-echo [OK] Done
+echo [6/7] Starting servers...
 
-:: Start servers
-echo.
-echo [7/8] Starting servers...
-pm2 start "%BACKEND%\server.js" --name "ryadom-backend"
-pm2 start "%SIGNALING%\server.js" --name "ryadom-signaling"
-pm2 save
-echo [OK] Both servers started
+:: Stop old instances (ignore errors)
+node "%PM2%" delete ryadom-backend   >nul 2>&1
+node "%PM2%" delete ryadom-signaling >nul 2>&1
 
-:: Firewall rules
+:: Start backend
+node "%PM2%" start "%BACKEND%\server.js" --name "ryadom-backend"
+if %errorlevel% neq 0 (
+    echo [!!] Failed to start backend
+    pause & exit /b 1
+)
+echo [OK] Backend started on port 3010
+
+:: Start signaling
+node "%PM2%" start "%SIGNALING%\server.js" --name "ryadom-signaling"
+if %errorlevel% neq 0 (
+    echo [!!] Failed to start signaling
+    pause & exit /b 1
+)
+echo [OK] Signaling started on port 9090
+
+:: Save process list
+node "%PM2%" save >nul 2>&1
+echo [OK] PM2 list saved
+
+:: ── 7. Firewall + Autostart ─────────────────────────────────────────
 echo.
-echo [8/8] Opening ports in Windows Firewall...
-netsh advfirewall firewall delete rule name="Ryadom Backend 3010" >nul 2>&1
+echo [7/7] Firewall and autostart...
+
+netsh advfirewall firewall delete rule name="Ryadom Backend 3010"   >nul 2>&1
 netsh advfirewall firewall delete rule name="Ryadom Signaling 9090" >nul 2>&1
 netsh advfirewall firewall add rule name="Ryadom Backend 3010"   dir=in action=allow protocol=TCP localport=3010 >nul
 netsh advfirewall firewall add rule name="Ryadom Signaling 9090" dir=in action=allow protocol=TCP localport=9090 >nul
-echo [OK] Ports 3010 and 9090 opened
+echo [OK] Ports 3010 and 9090 opened in Firewall
 
-:: Autostart via Task Scheduler
 schtasks /query /tn "Ryadom PM2 Autostart" >nul 2>&1
 if %errorlevel% neq 0 (
-    schtasks /create /tn "Ryadom PM2 Autostart" /tr "pm2 resurrect" /sc onlogon /rl highest /f >nul
+    schtasks /create /tn "Ryadom PM2 Autostart" /tr "node \"%PM2%\" resurrect" /sc onlogon /rl highest /f >nul
     echo [OK] Autostart on boot configured
 ) else (
     echo [OK] Autostart already configured
 )
 
-:: Final status
+:: ── Done ────────────────────────────────────────────────────────────
 echo.
 echo  ==========================================
 echo   SERVERS ARE RUNNING
 echo  ==========================================
 echo.
-echo   Backend  REST API:  http://176.99.158.181:3010
-echo   Signaling WebSocket: ws://176.99.158.181:9090
+echo   Backend  : http://176.99.158.181:3010
+echo   Signaling: ws://176.99.158.181:9090
 echo.
 echo   Health check (open in browser):
 echo   http://176.99.158.181:3010/health
 echo.
-echo   PM2 commands:
-echo   pm2 status        - show processes
-echo   pm2 logs          - live logs
-echo   pm2 restart all   - restart
-echo   pm2 stop all      - stop
+echo   Useful commands:
+echo   node "%PM2%" status
+echo   node "%PM2%" logs
+echo   node "%PM2%" restart all
 echo.
 
-pm2 status
+node "%PM2%" status
 
 echo.
 pause
